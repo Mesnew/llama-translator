@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historique des traductions - Ollama</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .history-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .history-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .history-search {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+        }
+        .history-search input {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border: none;
+            background-color: #2a2a4a;
+            color: white;
+        }
+        .history-item {
+            background-color: #232342;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+        .history-item-languages {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .history-item-languages span {
+            background-color: #2a2a4a;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .history-item-date {
+            font-style: italic;
+        }
+        .history-item-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .history-text {
+            background-color: #2a2a4a;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            white-space: pre-wrap;
+        }
+        .history-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .history-actions button {
+            background-color: #3a3a5a;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .history-actions button:hover {
+            background-color: #4a4a6a;
+        }
+        .history-actions button.reuse {
+            background-color: #4a6bff;
+        }
+        .history-actions button.reuse:hover {
+            background-color: #3a5bef;
+        }
+        .history-empty {
+            text-align: center;
+            padding: 3rem;
+            color: #a0a0c0;
+        }
+        .simulated-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #f59e0b;
+            color: #1a1a36;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+        .pagination button {
+            background-color: #2a2a4a;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background-color: #3a3a5a;
+        }
+        .pagination button.active {
+            background-color: #4a6bff;
+        }
+        .pagination button:disabled {
+            background-color: #1a1a36;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .stats-card {
+            background-color: #232342;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .stats-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .stats-item {
+            background-color: #2a2a4a;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            text-align: center;
+        }
+        .stats-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #4a6bff;
+        }
+        .stats-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+        .chart-container {
+            height: 200px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="history-container">
+    <header>
+        <h1>Ollama</h1>
+        <div class="separator"></div>
+        <a href="/" class="status-link">Retour à la traduction</a>
+    </header>
+    <h2>Historique des traductions</h2>
+
+    <div class="stats-card">
+        <h3 class="stats-title">Statistiques</h3>
+        <div class="stats-grid">
+            <div class="stats-item">
+                <div id="total-translations" class="stats-value">0</div>
+                <div class="stats-label">Traductions totales</div>
+            </div>
+            <div class="stats-item">
+                <div id="real-translations" class="stats-value">0</div>
+                <div class="stats-label">Traductions par IA</div>
+            </div>
+            <div class="stats-item">
+                <div id="simulated-translations" class="stats-value">0</div>
+                <div class="stats-label">Traductions simulées</div>
+            </div>
+            <div class="stats-item">
+                <div id="most-used-language" class="stats-value">-</div>
+                <div class="stats-label">Langue la plus utilisée</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="history-controls">
+        <div class="history-search">
+            <input type="text" id="search-input" placeholder="Rechercher dans l'historique...">
+            <button id="search-button">Rechercher</button>
+        </div>
+        <button id="clear-history">Effacer l'historique</button>
+    </div>
+
+    <div id="history-list">
+        <!-- Les éléments d'historique seront ajoutés ici dynamiquement -->
+        <div class="history-empty">Chargement de l'historique...</div>
+    </div>
+
+    <div class="pagination" id="pagination">
+        <!-- La pagination sera ajoutée ici dynamiquement -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const historyList = document.getElementById('history-list');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const clearHistoryButton = document.getElementById('clear-history');
+        const paginationContainer = document.getElementById('pagination');
+
+        // Éléments de statistiques
+        const totalTranslationsEl = document.getElementById('total-translations');
+        const realTranslationsEl = document.getElementById('real-translations');
+        const simulatedTranslationsEl = document.getElementById('simulated-translations');
+        const mostUsedLanguageEl = document.getElementById('most-used-language');
+
+        let allHistory = [];
+        let filteredHistory = [];
+        const itemsPerPage = 5;
+        let currentPage = 1;
+
+        // Fonction pour obtenir le nom complet de la langue à partir du code
+        function getLanguageName(code) {
+            const languages = {
+                fr: "Français",
+                en: "Anglais",
+                es: "Espagnol",
+                de: "Allemand",
+                it: "Italien",
+                pt: "Portugais",
+                ru: "Russe",
+                zh: "Chinois",
+                ja: "Japonais",
+                ar: "Arabe",
+            };
+            return languages[code] || code;
+        }
+
+        // Fonction pour formater la date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Fonction pour charger l'historique
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                allHistory = await response.json();
+                filteredHistory = [...allHistory];
+                renderHistory();
+                loadStats();
+            } catch (error) {
+                console.error('Erreur lors du chargement de l\'historique:', error);
+                historyList.innerHTML = '<div class="history-empty">Erreur lors du chargement de l\'historique</div>';
+            }
+        }
+
+        // Fonction pour charger les statistiques
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+
+                totalTranslationsEl.textContent = stats.totalTranslations;
+                realTranslationsEl.textContent = stats.realCount;
+                simulatedTranslationsEl.textContent = stats.simulatedCount;
+
+                // Trouver la langue la plus utilisée
+                let maxCount = 0;
+                let mostUsedLang = '-';
+
+                for (const [lang, count] of Object.entries(stats.sourceLangCount)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        mostUsedLang = lang;
+                    }
+                }
+
+                mostUsedLanguageEl.textContent = getLanguageName(mostUsedLang);
+
+            } catch (error) {
+                console.error('Erreur lors du chargement des statistiques:', error);
+            }
+        }
+
+        // Fonction pour rendre l'historique
+        function renderHistory() {
+            if (filteredHistory.length === 0) {
+                historyList.innerHTML = '<div class="history-empty">Aucune traduction dans l\'historique</div>';
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            // Calculer les pages
+            const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+
+            // Obtenir les éléments pour la page actuelle
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredHistory.length);
+            const currentItems = filteredHistory.slice(startIndex, endIndex);
+
+            // Rendre les éléments
+            historyList.innerHTML = '';
+
+            currentItems.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+
+                if (item.isSimulated) {
+                    const badge = document.createElement('div');
+                    badge.className = 'simulated-badge';
+                    badge.textContent = 'Simulée';
+                    historyItem.appendChild(badge);
+                }
+
+                historyItem.innerHTML = `
+                        <div class="history-item-header">
+                            <div class="history-item-languages">
+                                <span>${getLanguageName(item.sourceLanguage)}</span>
+                                →
+                                <span>${getLanguageName(item.targetLanguage)}</span>
+                            </div>
+                            <div class="history-item-date">${formatDate(item.timestamp)}</div>
+                        </div>
+                        <div class="history-item-content">
+                            <div class="history-text">${item.sourceText}</div>
+                            <div class="history-text">${item.translatedText}</div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="reuse" data-id="${item.id}">Réutiliser</button>
+                            <button class="copy-source" data-text="${encodeURIComponent(item.sourceText)}">Copier source</button>
+                            <button class="copy-translation" data-text="${encodeURIComponent(item.translatedText)}">Copier traduction</button>
+                        </div>
+                    `;
+
+                historyList.appendChild(historyItem);
+            });
+
+            // Rendre la pagination
+            renderPagination(totalPages);
+
+            // Ajouter les écouteurs d'événements pour les boutons
+            document.querySelectorAll('.reuse').forEach(button => {
+                button.addEventListener('click', () => {
+                    const id = button.getAttribute('data-id');
+                    const item = allHistory.find(h => h.id === id);
+                    if (item) {
+                        // Rediriger vers la page principale avec les paramètres
+                        const params = new URLSearchParams({
+                            sourceText: item.sourceText,
+                            sourceLanguage: item.sourceLanguage,
+                            targetLanguage: item.targetLanguage
+                        });
+                        window.location.href = `/?${params.toString()}`;
+                    }
+                });
+            });
+
+            document.querySelectorAll('.copy-source, .copy-translation').forEach(button => {
+                button.addEventListener('click', () => {
+                    const text = decodeURIComponent(button.getAttribute('data-text'));
+                    navigator.clipboard.writeText(text).then(() => {
+                        const originalText = button.textContent;
+                        button.textContent = 'Copié !';
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                        }, 1500);
+                    });
+                });
+            });
+        }
+
+        // Fonction pour rendre la pagination
+        function renderPagination(totalPages) {
+            paginationContainer.innerHTML = '';
+
+            // Bouton précédent
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '←';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderHistory();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+
+            // Pages
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = i === currentPage ? 'active' : '';
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    renderHistory();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+
+            // Bouton suivant
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '→';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderHistory();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
+
+        // Recherche dans l'historique
+        searchButton.addEventListener('click', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            if (searchTerm) {
+                filteredHistory = allHistory.filter(item =>
+                    item.sourceText.toLowerCase().includes(searchTerm) ||
+                    item.translatedText.toLowerCase().includes(searchTerm)
+                );
+            } else {
+                filteredHistory = [...allHistory];
+            }
+            currentPage = 1;
+            renderHistory();
+        });
+
+        // Effacer l'historique
+        clearHistoryButton.addEventListener('click', async () => {
+            if (confirm('Êtes-vous sûr de vouloir effacer tout l\'historique des traductions ?')) {
+                try {
+                    const response = await fetch('/api/history', {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        allHistory = [];
+                        filteredHistory = [];
+                        renderHistory();
+                        loadStats();
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de l\'effacement de l\'historique:', error);
+                    alert('Erreur lors de l\'effacement de l\'historique');
+                }
+            }
+        });
+
+        // Charger l'historique au chargement de la page
+        loadHistory();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de génération d'images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a36;
+            color: white;
+        }
+        h1 {
+            color: #4a6bff;
+        }
+        .test-container {
+            background-color: #232342;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4a6bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #3a5bef;
+        }
+        pre {
+            background-color: #2a2a4a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        img {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+<h1>Test de génération d'images</h1>
+
+<div class="test-container">
+    <h2>Test de l'API</h2>
+    <button id="testApi">Tester l'API</button>
+    <div id="apiResult" class="result"></div>
+</div>
+
+<div class="test-container">
+    <h2>Test de génération d'image</h2>
+    <div>
+        <label for="prompt">Description:</label>
+        <input type="text" id="prompt" value="Un coucher de soleil sur la mer" style="width: 100%; padding: 8px; margin: 10px 0; background-color: #2a2a4a; color: white; border: none; border-radius: 4px;">
+    </div>
+    <button id="generateImage">Générer une image</button>
+    <div id="generateResult" class="result"></div>
+</div>
+
+<div class="test-container">
+    <h2>Informations de débogage</h2>
+    <button id="checkEnvironment">Vérifier l'environnement</button>
+    <div id="environmentInfo" class="result"></div>
+</div>
+
+<script>
+    document.getElementById('testApi').addEventListener('click', async () => {
+        const resultDiv = document.getElementById('apiResult');
+        resultDiv.innerHTML = 'Test en cours...';
+
+        try {
+            const response = await fetch('/api/test-image-generation');
+            const data = await response.json();
+
+            let html = `<p class="success">✅ API accessible</p>`;
+            html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+            if (data.testImageUrl) {
+                html += `<p>Image de test:</p>`;
+                html += `<img src="${data.testImageUrl}" alt="Image de test">`;
+            }
+
+            resultDiv.innerHTML = html;
+        } catch (error) {
+            resultDiv.innerHTML = `<p class="error">❌ Erreur: ${error.message}</p>`;
+            console.error('Erreur lors du test de l\'API:', error);
+        }
+    });
+
+    document.getElementById('generateImage').addEventListener('click', async () => {
+        const resultDiv = document.getElementById('generateResult');
+        const prompt = document.getElementById('prompt').value.trim();
+
+        if (!prompt) {
+            resultDiv.innerHTML = `<p class="error">❌ Veuillez entrer une description</p>`;
+            return;
+        }
+
+        resultDiv.innerHTML = 'Génération en cours...';
+
+        try {
+            const response = await fetch('/api/generate-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt,
+                    aspectRatio: '1:1',
+                    style: 'photo'
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                let html = `<p class="success">✅ Image générée avec succès</p>`;
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+                if (data.imageUrl) {
+                    html += `<p>Image générée:</p>`;
+                    html += `<img src="${data.imageUrl}" alt="Image générée">`;
+                }
+
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = `<p class="error">❌ Erreur: ${data.error || 'Erreur inconnue'}</p>`;
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `<p class="error">❌ Erreur: ${error.message}</p>`;
+            console.error('Erreur lors de la génération d\'image:', error);
+        }
+    });
+
+    document.getElementById('checkEnvironment').addEventListener('click', async () => {
+        const resultDiv = document.getElementById('environmentInfo');
+        resultDiv.innerHTML = 'Vérification en cours...';
+
+        try {
+            const info = {
+                userAgent: navigator.userAgent,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                time: new Date().toISOString(),
+                features: {
+                    fetch: typeof fetch !== 'undefined',
+                    localStorage: typeof localStorage !== 'undefined',
+                    json: typeof JSON !== 'undefined'
+                }
+            };
+
+            resultDiv.innerHTML = `<pre>${JSON.stringify(info, null, 2)}</pre>`;
+        } catch (error) {
+            resultDiv.innerHTML = `<p class="error">❌ Erreur: ${error.message}</p>`;
+        }
+    });
+</script>
+</body>
+</html>

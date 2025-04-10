@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outils d'images - Ollama Traduction</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .image-tools-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #3a3a5a;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            color: #a0a0c0;
+            font-size: 1rem;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: white;
+            border-bottom-color: #4a6bff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-message {
+            background-color: #232342;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .info-message h3 {
+            margin-bottom: 1rem;
+            color: #4a6bff;
+        }
+
+        .info-message p {
+            margin-bottom: 0.5rem;
+        }
+
+        .info-message code {
+            background-color: #2a2a4a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+
+        .info-message ul {
+            text-align: left;
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        .info-message li {
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-container {
+            border: 2px dashed #3a3a5a;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            background-color: #2a2a4a;
+            transition: border-color 0.3s;
+        }
+
+        .upload-container.dragover {
+            border-color: #4a6bff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #a0a0c0;
+        }
+
+        .upload-text {
+            margin-bottom: 1rem;
+            color: #a0a0c0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .browse-button {
+            background-color: #4a6bff;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .browse-button:hover {
+            background-color: #3a5bef;
+        }
+
+        .preview-container {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .preview-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .preview-image-container {
+            background-color: #2a2a4a;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 0.25rem;
+        }
+
+        .extracted-text {
+            background-color: #2a2a4a;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            white-space: pre-wrap;
+        }
+
+        .generate-container {
+            background-color: #232342;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .generate-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+
+        .form-input {
+            background-color: #2a2a4a;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.75rem;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .aspect-ratio-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .aspect-ratio-option {
+            background-color: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.3s;
+        }
+
+        .aspect-ratio-option.active {
+            background-color: #4a6bff;
+            border-color: #4a6bff;
+        }
+
+        .style-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .style-option {
+            background-color: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+
+        .style-option.active {
+            background-color: #4a6bff;
+            border-color: #4a6bff;
+        }
+
+        .generate-button {
+            background-color: #4a6bff;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .generate-button:hover {
+            background-color: #3a5bef;
+        }
+
+        .generate-button:disabled {
+            background-color: #3a3a5a;
+            cursor: not-allowed;
+        }
+
+        .loading-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(74, 107, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #4a6bff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        .loading-text {
+            color: #a0a0c0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .translation-action {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .history-item {
+            background-color: #232342;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .history-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+
+        .history-content {
+            flex: 1;
+        }
+
+        .history-text {
+            margin-bottom: 0.5rem;
+            white-space: pre-wrap;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: #a0a0c0;
+        }
+
+        .model-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            align-items: center;
+        }
+
+        .model-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+
+        .model-select {
+            background-color: #2a2a4a;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            color: white;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .error-message {
+            background-color: #3a1a1a;
+            color: #f87171;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin: 1rem 0;
+        }
+
+        .success-message {
+            background-color: #1a3a1a;
+            color: #4ade80;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin: 1rem 0;
+        }
+
+        .image-generation-info {
+            background-color: #1a2a3a;
+            color: #60a5fa;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+<div class="image-tools-container">
+    <header>
+        <h1>Ollama</h1>
+        <div class="separator"></div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Traduction</a>
+            <a href="/history" class="nav-link">Historique</a>
+            <a href="/status" class="nav-link">Statut du système</a>
+        </div>
+    </header>
+    <h2>Outils d'images</h2>
+
+    <div class="tabs">
+        <button class="tab" data-tab="info">Information</button>
+        <button class="tab" data-tab="ocr">Extraire du texte (OCR)</button>
+        <button class="tab" data-tab="generate">Générer des images</button>
+        <button class="tab" data-tab="history">Historique d'images</button>
+    </div>
+
+    <div id="info-tab" class="tab-content">
+        <div class="info-message">
+            <h3>Génération d'images avec Ollama</h3>
+            <p>Cette application utilise Ollama pour générer des images à partir de descriptions textuelles.</p>
+
+            <h4>À propos des modèles disponibles</h4>
+            <p><strong>Llava</strong> est un modèle multimodal qui peut comprendre et discuter des images, mais n'est pas conçu pour générer des images de haute qualité comme Stable Diffusion.</p>
+            <p>Avec Llava, l'application génère des images de placeholder avec votre texte.</p>
+
+            <h4>Installation des modèles</h4>
+            <p>Vous pouvez installer les modèles suivants :</p>
+            <ul>
+                <li><code>ollama pull llava</code> - Modèle multimodal basé sur Llama 2</li>
+                <li><code>ollama pull llava-llama3</code> - Modèle multimodal basé sur Llama 3</li>
+            </ul>
+
+            <p>Pour une véritable génération d'images, vous auriez besoin d'un modèle comme Stable Diffusion, mais celui-ci n'est pas disponible directement via Ollama.</p>
+        </div>
+    </div>
+
+    <div id="ocr-tab" class="tab-content">
+        <div class="info-message">
+            <h3>Extraction de texte à partir d'images</h3>
+            <p>Cette fonctionnalité nécessite l'installation des dépendances.</p>
+            <p>Veuillez consulter l'onglet Information pour les instructions d'installation.</p>
+        </div>
+        <div class="upload-container" id="upload-area">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">Glissez-déposez une image ou</div>
+            <input type="file" id="file-input" class="file-input" accept="image/*">
+            <button class="browse-button" id="browse-button">Parcourir</button>
+            <p class="upload-text upload-hint">Formats supportés: JPG, PNG, GIF, BMP</p>
+        </div>
+
+        <div class="preview-container" id="preview-container">
+            <div class="preview-header">
+                <div class="preview-title">Aperçu de l'image</div>
+                <div class="preview-actions">
+                    <button id="reset-button" class="browse-button">Réinitialiser</button>
+                </div>
+            </div>
+
+            <div class="preview-image-container">
+                <img id="preview-image" class="preview-image" src="/placeholder.svg" alt="Aperçu de l'image">
+            </div>
+
+            <div id="loading-ocr" class="loading-indicator" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Extraction du texte en cours...</div>
+            </div>
+
+            <div id="extracted-text-container" style="display: none;">
+                <h3>Texte extrait:</h3>
+                <div id="extracted-text" class="extracted-text"></div>
+
+                <div class="translation-action">
+                    <button id="use-for-translation" class="generate-button">Utiliser pour la traduction</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="generate-tab" class="tab-content">
+        <div class="info-message">
+            <h3>Génération d'images avec Ollama</h3>
+            <p>Cette fonctionnalité utilise Ollama pour générer des images à partir de descriptions textuelles.</p>
+            <div id="model-status-message"></div>
+        </div>
+        <div class="generate-container">
+            <h3>Générer une image à partir du texte</h3>
+            <div class="generate-form">
+                <div class="form-group">
+                    <label class="form-label" for="prompt-input">Description de l'image (prompt)</label>
+                    <textarea id="prompt-input" class="form-input" rows="3" placeholder="Décrivez l'image que vous souhaitez générer..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Format de l'image</label>
+                    <div class="aspect-ratio-options">
+                        <div class="aspect-ratio-option active" data-ratio="1:1">Carré (1:1)</div>
+                        <div class="aspect-ratio-option" data-ratio="16:9">Paysage (16:9)</div>
+                        <div class="aspect-ratio-option" data-ratio="9:16">Portrait (9:16)</div>
+                        <div class="aspect-ratio-option" data-ratio="4:3">Standard (4:3)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Style artistique</label>
+                    <div class="style-options">
+                        <div class="style-option active" data-style="photo">Photographie</div>
+                        <div class="style-option" data-style="painting">Peinture</div>
+                        <div class="style-option" data-style="3d">3D Render</div>
+                        <div class="style-option" data-style="pixel">Pixel Art</div>
+                        <div class="style-option" data-style="sketch">Croquis</div>
+                        <div class="style-option" data-style="anime">Anime</div>
+                        <div class="style-option" data-style="cartoon">Cartoon</div>
+                        <div class="style-option" data-style="fantasy">Fantasy</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Modèle de génération</label>
+                    <div class="model-selector">
+                        <select id="image-model-select" class="model-select">
+                            <option value="fi4">fi4</option>
+                            <!-- D'autres modèles seront ajoutés dynamiquement -->
+                        </select>
+                        <button id="refresh-models-button" class="browse-button">Rafraîchir</button>
+                    </div>
+                </div>
+
+                <button id="generate-image-button" class="generate-button" disabled>Générer l'image</button>
+            </div>
+        </div>
+
+        <div id="loading-generate" class="loading-indicator" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Génération de l'image en cours...</div>
+            <p class="loading-text">Cela peut prendre jusqu'à 1 minute...</p>
+        </div>
+
+        <div id="generated-image-container" class="generated-image-container" style="display:none;">
+            <div class="preview-header">
+                <div class="preview-title">Image générée</div>
+                <div class="preview-actions">
+                    <button id="download-button" class="browse-button">Télécharger</button>
+                    <button id="share-button" class="browse-button">Partager</button>
+                </div>
+            </div>
+
+            <div class="preview-image-container">
+                <img id="generated-image" class="generated-image" src="/placeholder.svg" alt="Image générée">
+                <div id="image-caption" class="image-caption"></div>
+            </div>
+
+            <div id="generation-info" class="image-generation-info" style="display:none;">
+                <p>Généré avec <span id="model-used">stable-diffusion</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-tab" class="tab-content">
+        <div id="image-history-list">
+            <!-- Liste d'historique d'images -->
+            <div class="empty-state">
+                <p>Aucune image dans l'historique</p>
+                <p>Les images extraites et générées apparaîtront ici</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@v2.1.1/dist/tesseract.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Gestion des onglets
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+
+                // Désactiver tous les onglets et contenus
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // Activer l'onglet sélectionné et son contenu
+                tab.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+
+                // Charger les modèles disponibles si on active l'onglet de génération
+                if (tabId === 'generate') {
+                    loadImageModels();
+                } else if (tabId === 'history') {
+                    displayImageHistory();
+                }
+            });
+        });
+
+        // Fonction pour charger les modèles de génération d'images disponibles
+        async function loadImageModels() {
+            const modelSelect = document.getElementById('image-model-select');
+            const modelStatusMessage = document.getElementById('model-status-message');
+
+            try {
+                const response = await fetch('/api/image-models');
+                const data = await response.json();
+
+                // Vider le select
+                modelSelect.innerHTML = '';
+
+                if (data.models && data.models.length > 0) {
+                    // Ajouter les modèles
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model.charAt(0).toUpperCase() + model.slice(1);
+                        modelSelect.appendChild(option);
+                    });
+
+                    modelStatusMessage.innerHTML = `<p class="success-message">Modèles disponibles: ${data.models.join(', ')}</p>`;
+                    document.getElementById('generate-image-button').disabled = false;
+                } else {
+                    // Ajouter un message d'erreur
+                    const option = document.createElement('option');
+                    option.value = "stable-diffusion";
+                    option.textContent = "Stable Diffusion (non détecté)";
+                    modelSelect.appendChild(option);
+
+                    if (data.message) {
+                        modelStatusMessage.innerHTML = `<p class="error-message">${data.message}</p>`;
+                    } else {
+                        modelStatusMessage.innerHTML = `
+                                <p class="error-message">
+                                    Aucun modèle de génération d'image détecté.
+                                    Installez un modèle avec la commande: <code>ollama pull stable-diffusion</code>
+                                </p>`;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des modèles:', error);
+                modelStatusMessage.innerHTML = `
+                        <p class="error-message">
+                            Erreur lors de la recherche des modèles.
+                            Vérifiez qu'Ollama est en cours d'exécution.
+                        </p>`;
+            }
+        }
+
+        // Gestionnaire pour le bouton de rafraîchissement des modèles
+        document.getElementById('refresh-models-button').addEventListener('click', loadImageModels);
+
+        // Gestion de l'upload d'image
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const browseButton = document.getElementById('browse-button');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('preview-image');
+        const resetButton = document.getElementById('reset-button');
+        const loadingOcr = document.getElementById('loading-ocr');
+        const extractedTextContainer = document.getElementById('extracted-text-container');
+        const extractedText = document.getElementById('extracted-text');
+        const useForTranslation = document.getElementById('use-for-translation');
+
+        // Gestion de la génération d'image
+        const promptInput = document.getElementById('prompt-input');
+        const aspectRatioOptions = document.querySelectorAll('.aspect-ratio-option');
+        const styleOptions = document.querySelectorAll('.style-option');
+        const generateImageButton = document.getElementById('generate-image-button');
+        const loadingGenerate = document.getElementById('loading-generate');
+        const generatedImageContainer = document.getElementById('generated-image-container');
+        const generatedImage = document.getElementById('generated-image');
+        const imageCaption = document.getElementById('image-caption');
+        const downloadButton = document.getElementById('download-button');
+        const shareButton = document.getElementById('share-button');
+        const generationInfo = document.getElementById('generation-info');
+        const modelUsed = document.getElementById('model-used');
+
+        // Variables pour les options sélectionnées
+        let selectedAspectRatio = '1:1';
+        let selectedStyle = 'photo';
+
+        // Gérer le glisser-déposer
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('dragover');
+            }, false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                handleFiles(files);
+            }
+        }
+
+        browseButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        function handleFiles(files) {
+            const file = files[0];
+
+            if (!file.type.match('image.*')) {
+                alert('Veuillez sélectionner une image');
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                uploadArea.style.display = 'none';
+                previewContainer.style.display = 'block';
+
+                // Lancer l'OCR
+                performOCR(e.target.result);
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        resetButton.addEventListener('click', () => {
+            uploadArea.style.display = 'block';
+            previewContainer.style.display = 'none';
+            extractedTextContainer.style.display = 'none';
+            fileInput.value = '';
+        });
+
+        async function performOCR(imageUrl) {
+            loadingOcr.style.display = 'flex';
+            extractedTextContainer.style.display = 'none';
+
+            try {
+                const worker = Tesseract.createWorker({
+                    logger: m => console.log(m)
+                });
+
+                await worker.load();
+                await worker.loadLanguage('fra+eng');
+                await worker.initialize('fra+eng');
+
+                const { data } = await worker.recognize(imageUrl);
+
+                extractedText.textContent = data.text;
+                extractedTextContainer.style.display = 'block';
+
+                await worker.terminate();
+            } catch (error) {
+                console.error('Erreur OCR:', error);
+                extractedText.textContent = "Erreur lors de l'extraction de texte. Veuillez réessayer.";
+                extractedTextContainer.style.display = 'block';
+            } finally {
+                loadingOcr.style.display = 'none';
+            }
+        }
+
+        useForTranslation.addEventListener('click', () => {
+            const text = extractedText.textContent;
+            window.location.href = `/?sourceText=${encodeURIComponent(text)}`;
+        });
+
+        // Gestionnaires pour la génération d'images
+        promptInput.addEventListener('input', () => {
+            generateImageButton.disabled = !promptInput.value.trim();
+        });
+
+        aspectRatioOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Désélectionner toutes les options
+                aspectRatioOptions.forEach(opt => opt.classList.remove('active'));
+
+                // Sélectionner l'option cliquée
+                option.classList.add('active');
+                selectedAspectRatio = option.getAttribute('data-ratio');
+            });
+        });
+
+        styleOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Désélectionner toutes les options
+                styleOptions.forEach(opt => opt.classList.remove('active'));
+
+                // Sélectionner l'option cliquée
+                option.classList.add('active');
+                selectedStyle = option.getAttribute('data-style');
+            });
+        });
+
+        generateImageButton.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            const selectedModel = document.getElementById('image-model-select').value;
+
+            if (!prompt) return;
+
+            loadingGenerate.style.display = 'flex';
+            generatedImageContainer.style.display = 'none';
+
+            try {
+                // Appel à l'API de génération d'image
+                const response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt,
+                        aspectRatio: selectedAspectRatio,
+                        style: selectedStyle,
+                        model: selectedModel
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    generatedImage.src = data.imageUrl;
+                    imageCaption.textContent = data.caption || prompt;
+                    generatedImageContainer.style.display = 'block';
+
+                    // Afficher les informations sur le modèle utilisé
+                    if (data.model) {
+                        modelUsed.textContent = data.model;
+                        generationInfo.style.display = 'block';
+                    }
+
+                    // Ajouter une classe si c'est un fallback
+                    if (data.fallback) {
+                        generationInfo.innerHTML = `
+                                <p class="error-message">
+                                    Erreur lors de la génération d'image avec Ollama: ${data.error || 'Erreur inconnue'}.<br>
+                                    Image de placeholder générée à la place.
+                                </p>`;
+                    }
+                } else {
+                    alert(`Erreur: ${data.error || 'Erreur inconnue'}`);
+                }
+            } catch (error) {
+                console.error('Erreur de génération:', error);
+                alert('Erreur lors de la génération de l\'image');
+            } finally {
+                loadingGenerate.style.display = 'none';
+            }
+        });
+
+        downloadButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = generatedImage.src;
+            link.download = `generated-image-${Date.now()}.png`;
+            link.click();
+        });
+
+        shareButton.addEventListener('click', () => {
+            const text = `Image générée avec Ollama: ${imageCaption.textContent}`;
+
+            if (navigator.share) {
+                fetch(generatedImage.src)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const file = new File([blob], 'generated-image.png', { type: 'image/png' });
+                        navigator.share({
+                            title: 'Image générée avec Ollama',
+                            text: text,
+                            files: [file]
+                        }).catch(error => {
+                            console.error('Erreur de partage:', error);
+                            fallbackShare();
+                        });
+                    });
+            } else {
+                fallbackShare();
+            }
+
+            function fallbackShare() {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Description de l\'image copiée dans le presse-papiers');
+                });
+            }
+        });
+
+        // Charger l'historique des images
+        function displayImageHistory() {
+            const historyList = document.getElementById('image-history-list');
+
+            try {
+                // Essayer de charger depuis le fichier json
+                fetch('/image-history.json')
+                    .then(response => response.json())
+                    .then(imageHistory => {
+                        if (imageHistory.length === 0) {
+                            historyList.innerHTML = `
+                                    <div class="empty-state">
+                                        <p>Aucune image dans l'historique</p>
+                                        <p>Les images extraites et générées apparaîtront ici</p>
+                                    </div>
+                                `;
+                            return;
+                        }
+
+                        historyList.innerHTML = '';
+
+                        imageHistory.forEach(item => {
+                            const historyElement = document.createElement('div');
+                            historyElement.className = 'history-item';
+
+                            historyElement.innerHTML = `
+                                    <img src="${item.imageUrl}" alt="Image" class="history-image">
+                                    <div class="history-content">
+                                        <div class="history-text">${item.prompt || 'Sans description'}</div>
+                                        <div class="history-date">${new Date(item.timestamp).toLocaleString()}</div>
+                                        <div class="history-actions">
+                                            <button class="browse-button history-view" data-url="${item.imageUrl}">Voir</button>
+                                            <button class="browse-button history-prompt" data-prompt="${encodeURIComponent(item.prompt || '')}">Réutiliser prompt</button>
+                                        </div>
+                                    </div>
+                                `;
+
+                            historyList.appendChild(historyElement);
+                        });
+
+                        // Ajouter les gestionnaires d'événements
+                        document.querySelectorAll('.history-view').forEach(button => {
+                            button.addEventListener('click', () => {
+                                const url = button.getAttribute('data-url');
+                                window.open(url, '_blank');
+                            });
+                        });
+
+                        document.querySelectorAll('.history-prompt').forEach(button => {
+                            button.addEventListener('click', () => {
+                                const prompt = decodeURIComponent(button.getAttribute('data-prompt'));
+                                // Aller à l'onglet de génération et pré-remplir le prompt
+                                document.querySelector('.tab[data-tab="generate"]').click();
+                                promptInput.value = prompt;
+                                generateImageButton.disabled = false;
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement de l\'historique:', error);
+                        historyList.innerHTML = `
+                                <div class="empty-state">
+                                    <p>Erreur lors du chargement de l'historique</p>
+                                </div>
+                            `;
+                    });
+            } catch (error) {
+                console.error('Erreur:', error);
+                historyList.innerHTML = `
+                        <div class="empty-state">
+                            <p>Aucune image dans l'historique</p>
+                        </div>
+                    `;
+            }
+        }
+
+        // Set active tab to info on load
+        document.querySelector('.tab[data-tab="info"]').click();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statut Ollama</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .status-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .status-card {
+            background-color: #232342;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #3a3a5a;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-label {
+            font-weight: bold;
+        }
+        .status-value {
+            color: #a0a0c0;
+        }
+        .status-success {
+            color: #4ade80;
+        }
+        .status-error {
+            color: #f87171;
+        }
+        .status-warning {
+            color: #facc15;
+        }
+        .status-loading {
+            color: #60a5fa;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="status-container">
+    <header>
+        <h1>Ollama</h1>
+        <div class="separator"></div>
+    </header>
+    <h2>Statut du système</h2>
+
+    <div class="status-card">
+        <div class="status-item">
+            <span class="status-label">Ollama installé</span>
+            <span id="ollama-installed" class="status-value status-loading">Vérification...</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Modèle Llama2 disponible</span>
+            <span id="llama2-available" class="status-value status-loading">Vérification...</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Test de traduction</span>
+            <span id="translation-test" class="status-value status-loading">Vérification...</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Version d'Ollama</span>
+            <span id="ollama-version" class="status-value">-</span>
+        </div>
+    </div>
+
+    <div id="error-details" class="status-card" style="display: none;">
+        <h3>Détails des erreurs</h3>
+        <pre id="error-log" style="white-space: pre-wrap; color: #f87171;"></pre>
+    </div>
+
+    <div id="recommendations" class="status-card" style="display: none;">
+        <h3>Recommandations</h3>
+        <ul id="recommendations-list" style="list-style-type: disc; padding-left: 1.5rem;"></ul>
+    </div>
+
+    <a href="index.html" class="back-link">← Retour à la traduction</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const ollamaInstalledEl = document.getElementById('ollama-installed');
+        const llama2AvailableEl = document.getElementById('llama2-available');
+        const translationTestEl = document.getElementById('translation-test');
+        const ollamaVersionEl = document.getElementById('ollama-version');
+        const errorDetailsEl = document.getElementById('error-details');
+        const errorLogEl = document.getElementById('error-log');
+        const recommendationsEl = document.getElementById('recommendations');
+        const recommendationsListEl = document.getElementById('recommendations-list');
+
+        const recommendations = [];
+        let hasErrors = false;
+
+        // Vérifier si Ollama est installé
+        try {
+            const response = await fetch('/api/status/ollama');
+            const data = await response.json();
+
+            if (data.installed) {
+                ollamaInstalledEl.textContent = 'Oui';
+                ollamaInstalledEl.className = 'status-value status-success';
+                ollamaVersionEl.textContent = data.version || 'Version inconnue';
+            } else {
+                ollamaInstalledEl.textContent = 'Non';
+                ollamaInstalledEl.className = 'status-value status-error';
+                hasErrors = true;
+                recommendations.push('Installez Ollama en suivant les instructions sur <a href="https://ollama.com" target="_blank">ollama.com</a>');
+            }
+        } catch (error) {
+            ollamaInstalledEl.textContent = 'Erreur de vérification';
+            ollamaInstalledEl.className = 'status-value status-error';
+            hasErrors = true;
+            errorLogEl.textContent += `Erreur lors de la vérification d'Ollama: ${error.message}\n`;
+        }
+
+        // Vérifier si le modèle Llama2 est disponible
+        try {
+            const response = await fetch('/api/status/model');
+            const data = await response.json();
+
+            if (data.available) {
+                llama2AvailableEl.textContent = 'Oui';
+                llama2AvailableEl.className = 'status-value status-success';
+            } else {
+                llama2AvailableEl.textContent = 'Non';
+                llama2AvailableEl.className = 'status-value status-error';
+                hasErrors = true;
+                recommendations.push('Téléchargez le modèle Llama2 avec la commande: <code>ollama pull llama2</code>');
+            }
+        } catch (error) {
+            llama2AvailableEl.textContent = 'Erreur de vérification';
+            llama2AvailableEl.className = 'status-value status-error';
+            hasErrors = true;
+            errorLogEl.textContent += `Erreur lors de la vérification du modèle: ${error.message}\n`;
+        }
+
+        // Tester la traduction
+        try {
+            const response = await fetch('/api/status/test');
+            const data = await response.json();
+
+            if (data.success) {
+                translationTestEl.textContent = 'Réussi';
+                translationTestEl.className = 'status-value status-success';
+            } else {
+                translationTestEl.textContent = 'Échec';
+                translationTestEl.className = 'status-value status-error';
+                hasErrors = true;
+                errorLogEl.textContent += `Erreur de test de traduction: ${data.error}\n`;
+                recommendations.push('Vérifiez que le service Ollama est en cours d\'exécution: <code>systemctl --user status ollama</code>');
+            }
+        } catch (error) {
+            translationTestEl.textContent = 'Erreur de test';
+            translationTestEl.className = 'status-value status-error';
+            hasErrors = true;
+            errorLogEl.textContent += `Erreur lors du test de traduction: ${error.message}\n`;
+        }
+
+        // Afficher les détails d'erreur et les recommandations si nécessaire
+        if (hasErrors) {
+            errorDetailsEl.style.display = 'block';
+            recommendationsEl.style.display = 'block';
+
+            recommendations.forEach(recommendation => {
+                const li = document.createElement('li');
+                li.innerHTML = recommendation;
+                recommendationsListEl.appendChild(li);
+            });
+        }
+    });
+</script>
+</body>
+</html>
